@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace CMKZ {
     public static partial class LocalStorage {

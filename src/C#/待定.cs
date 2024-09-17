@@ -1,4 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using Newtonsoft.Json;//Json
 using System;//Action
 using System.Collections;

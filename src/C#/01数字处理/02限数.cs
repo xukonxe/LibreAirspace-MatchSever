@@ -1,4 +1,4 @@
-﻿using System;//Action
+using System;//Action
 
 namespace CMKZ {
     public class 限数 {

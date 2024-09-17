@@ -1,4 +1,4 @@
-﻿using kcp2k;
+using kcp2k;
 using System.Numerics;
 using System.Text;
 using static CMKZ.LocalStorage;

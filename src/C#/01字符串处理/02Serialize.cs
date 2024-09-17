@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;//Json
+using Newtonsoft.Json;//Json
 using Newtonsoft.Json.Serialization;
 using System;//Action
 using System.Reflection;

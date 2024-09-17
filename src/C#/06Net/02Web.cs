@@ -1,3 +1,3 @@
-﻿namespace CMKZ {
+namespace CMKZ {
 
 }

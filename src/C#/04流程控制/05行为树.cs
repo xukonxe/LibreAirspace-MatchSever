@@ -1,4 +1,4 @@
-﻿namespace CMKZ {
+namespace CMKZ {
     public static partial class LocalStorage {
 
     }

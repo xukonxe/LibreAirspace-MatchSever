@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace CMKZ {
     public class CMKZList<T> : System.Collections.Generic.List<T> {

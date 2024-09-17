@@ -1,4 +1,4 @@
-﻿using System;//Action
+using System;//Action
 using System.Linq;//from XX select XX
 using System.Reflection;
 using static CMKZ.LocalStorage;

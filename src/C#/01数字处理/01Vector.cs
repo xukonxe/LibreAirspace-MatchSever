@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace CMKZ {
     public struct Vector4Int {

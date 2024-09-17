@@ -1,4 +1,4 @@
-﻿using System;//Action
+using System;//Action
 using System.Security.Cryptography;
 using System.Text;
 

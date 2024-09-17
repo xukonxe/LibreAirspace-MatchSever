@@ -1,4 +1,4 @@
-﻿using System;//Action
+using System;//Action
 using System.Linq;
 using System.Security.Cryptography;
 using static CMKZ.LocalStorage;
