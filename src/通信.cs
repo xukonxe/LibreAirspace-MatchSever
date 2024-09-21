@@ -1,5 +1,8 @@
 using kcp2k;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using static CMKZ.LocalStorage;
 using static TGZG.战雷革命游戏服务器.公共空间;
@@ -8,6 +11,9 @@ namespace TGZG.战雷革命游戏服务器 {
     public static partial class 公共空间 {
         public static Dictionary<int, (玩家游玩数据 世界, HashSet<部位> 损坏部位)> 所有玩家 = new();
     }
+	/// <summary>
+	/// 自由空域房间管理协议的客户端实现。
+	/// </summary>
     public class 房间管理信道类 : 网络信道类 {
         public 房间管理信道类(string ip, string 版本) : base(ip, 版本) {
             OnDisconnect += () => {

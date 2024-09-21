@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>..\artifact\obj\</BaseIntermediateOutputPath>
+    <BaseOutputPath>..\artifact\bin\</BaseOutputPath>
+    <!-- <AssemblyName></AssemblyName>
+    <RootNamespace></RootNamespace> -->
+  </PropertyGroup>
+
+</Project>
+
