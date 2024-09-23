@@ -1,4 +1,5 @@
 using kcp2k;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,9 +12,7 @@ namespace TGZG.战雷革命游戏服务器 {
     public static partial class 公共空间 {
         public static Dictionary<int, (玩家游玩数据 世界, HashSet<部位> 损坏部位)> 所有玩家 = new();
     }
-	/// <summary>
-	/// 自由空域房间管理协议的客户端实现。
-	/// </summary>
+	// 自由空域房间管理协议的客户端实现。
     public class 房间管理信道类 : 网络信道类 {
         public 房间管理信道类(string ip, string 版本) : base(ip, 版本) {
             OnDisconnect += () => {
@@ -368,5 +367,57 @@ namespace TGZG.战雷革命游戏服务器 {
         public string 房间版本;
         public int 每秒同步次数;
         public DateTime 房间创建时间;
-    }
+		//C/S端模组同步逻辑这块还待补充。
+		public ModInfo[] 模组列表;
+	}
+
+	[JsonObject]
+	public class ModInfo {
+		[JsonProperty(Required = Required.Always, PropertyName = "Name")]
+		internal string _name;
+		[JsonProperty(Required = Required.Always, PropertyName = "Description")]
+		internal string _description;
+		[JsonProperty(Required = Required.Always, PropertyName = "Author")]
+		internal string _author;
+		[JsonProperty(Required = Required.Always, PropertyName = "Version")]
+		internal string _version;
+		[JsonProperty(Required = Required.Always, PropertyName = "Guid")]
+		internal string _guid;
+
+		/// <summary>
+		/// 模组包的Sha256校验和。
+		/// </summary>
+		[JsonIgnore]
+		public byte[] m_ModPackSha512Sum;
+
+		/// <summary>
+		/// 模组的一般名称
+		/// </summary>
+		[JsonIgnore]
+		public string Name { get => this._name; }
+
+		/// <summary>
+		/// 模组的描述
+		/// </summary>
+		[JsonIgnore]
+		public string Description { get => this._description; }
+
+		/// <summary>
+		/// 模组的作者
+		/// </summary>
+		[JsonIgnore]
+		public string Author { get => this._author; }
+
+		/// <summary>
+		/// 模组的版本
+		/// </summary>
+		[JsonIgnore]
+		public string Version { get => this._version; }
+
+		/// <summary>
+		/// 模组的GUID标识符
+		/// </summary>
+		[JsonIgnore]
+		public string Guid { get => this._guid; }
+	}
 }

@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using Newtonsoft.Json;
@@ -15,6 +14,10 @@ namespace WTRev.TKTLib.Modding.InfoCls {
 		public const string BINARY = "BINARY";
 
 		public const string SCRIPT_CSHARP = "SCRIPT_CSHARP";
+
+		public const string SCRIPT_CSHARP_CLIENT_SIDE_ONLY = "SCRIPT_CSHARP_CLIENT_SIDE_ONLY";
+
+		public const string SCRIPT_CSHARP_SERVER_SIDE_ONLY = "SCRIPT_CSHARP_SERVER_SIDE_ONLY";
 	}
 
 	[JsonObject]
@@ -65,6 +68,12 @@ namespace WTRev.TKTLib.Modding.InfoCls {
 		private string _guid;
 		[JsonProperty(Required = Required.Always, PropertyName = "FileTable")]
 		private ModFileInfo[] _filetable;
+
+		/// <summary>
+		/// 模组包的Sha512校验和。
+		/// </summary>
+		[JsonIgnore]
+		public byte[] m_ModPackSha512Sum;
 
 		/// <summary>
 		/// 模组的一般名称
