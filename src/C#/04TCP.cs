@@ -51,7 +51,14 @@ namespace CMKZ {
                         Success[A["_ID"]](A);
                         Success.RemoveKey(A["_ID"]);
                     } else if (OnRead.ContainsKey(A["标题"])) {
-                        OnRead[A["标题"]](A);
+                        try {
+                            OnRead[A["标题"]](A);
+                        } catch (Exception ex) {
+                            //输出红色错误信息
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine($"处理消息[\"{A["标题"]}\"]时遇到错误：" + ex.Message);
+                            Console.ResetColor();
+                        }
                     }
                 }
             };
@@ -64,7 +71,9 @@ namespace CMKZ {
             try {
                 Client.Connect();
             } catch (Exception e) {
+                Console.ForegroundColor = ConsoleColor.Red;
                 $"TCP连接失败：{e.Message}".log();
+                Console.ForegroundColor = ConsoleColor.White;
                 return false;
             }
             return true;
@@ -89,7 +98,9 @@ namespace CMKZ {
                     Client.Send(A);
                     OnSend?.Invoke(A);
                 } catch {
+                    Console.ForegroundColor = ConsoleColor.Red;
                     Print("TCP发送失败");
+                    Console.ResetColor();
                     Success.RemoveKey(X["_ID"]);
                 }
             }
@@ -104,7 +115,7 @@ namespace CMKZ {
     }
     public class TcpServer {
         public int Port;
-        public Dictionary<string, Func<Dictionary<string, string>, SocketClient, CMKZ_Dictionary<string, string>>> OnRead = new();
+        public Dictionary<string, Func<Dictionary<string, string>, SocketClient, Dictionary<string, string>>> OnRead = new();
         public Action<string, SocketClient> OnReceive;
         public Action<SocketClient> OnConnect;
         public Action<SocketClient> OnDisconnect;
