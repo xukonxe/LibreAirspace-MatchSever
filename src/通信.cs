@@ -383,12 +383,14 @@ namespace TGZG.战雷革命游戏服务器 {
 		internal string _version;
 		[JsonProperty(Required = Required.Always, PropertyName = "Guid")]
 		internal string _guid;
+		[JsonProperty(Required = Required.Always, PropertyName = "ModPackSha512SumAsBase64EncodedString")]
+		internal string _modPackSha512SumAsBase64EncodedString;
 
 		/// <summary>
-		/// 模组包的Sha256校验和。
+		/// 模组包的Sha512校验和(以BASE64编码)。
 		/// </summary>
 		[JsonIgnore]
-		public byte[] m_ModPackSha512Sum;
+		public string ModPackSha512SumAsBase64EncodedString { get => this._modPackSha512SumAsBase64EncodedString; }
 
 		/// <summary>
 		/// 模组的一般名称
