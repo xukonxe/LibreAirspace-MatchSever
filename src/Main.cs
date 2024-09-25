@@ -20,8 +20,8 @@ namespace TGZG.战雷革命游戏服务器 {
 		//        ||=================||
 
 		//============================
-		public static 房间管理信道类 房间管理信道 = new("47.97.112.35:16312", "0.0.4");
-		//public static 房间管理信道类 房间管理信道 = new("127.0.0.1:16312", "0.0.4");
+		//public static 房间管理信道类 房间管理信道 = new("47.97.112.35:16312", "0.0.4");
+		public static 房间管理信道类 房间管理信道 = new("127.0.0.1:16312", "0.0.4");
 		public static 玩家管理信道类 玩家管理信道 = new(16314, 版本);
 		public static WTRev.TKTLib.Modding.ModManager.ModManager 模组管理器 = null;
 
@@ -41,7 +41,7 @@ namespace TGZG.战雷革命游戏服务器 {
 					_guid = _ModSys_ModInfo.Guid,
 					_name = _ModSys_ModInfo.Name,
 					_version = _ModSys_ModInfo.Version,
-					m_ModPackSha512Sum = _ModSys_ModInfo.m_ModPackSha512Sum
+					_modPackSha512SumAsBase64EncodedString = Convert.ToBase64String(_ModSys_ModInfo.m_ModPackSha512Sum)
 				}).ToArray();
 
 			玩家管理信道.Start(房间数据.每秒同步次数);
