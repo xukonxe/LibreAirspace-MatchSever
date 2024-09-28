@@ -6,7 +6,7 @@ using static CMKZ.LocalStorage;
 
 namespace TGZG.战雷革命游戏服务器 {
 	public static partial class 公共空间 {
-        public static string 版本 => "v0.10-Beta";
+        public static string 版本 => "v0.13-Beta";
         public static 房间参数类 房间数据;
 		//==========端口定义===========
 		//16312:服务器<=>房间服务器
@@ -20,8 +20,8 @@ namespace TGZG.战雷革命游戏服务器 {
 		//        ||=================||
 
 		//============================
-		//public static 房间管理信道类 房间管理信道 = new("47.97.112.35:16312", "0.0.4");
-		public static 房间管理信道类 房间管理信道 = new("127.0.0.1:16312", "0.0.4");
+		//public static 房间管理信道类 房间管理信道 = new("47.97.112.35:16312", "0.0.5");
+		public static 房间管理信道类 房间管理信道 = new("127.0.0.1:16312", "0.0.5");
 		public static 玩家管理信道类 玩家管理信道 = new(16314, 版本);
 		public static WTRev.TKTLib.Modding.ModManager.ModManager 模组管理器 = null;
 
@@ -64,7 +64,7 @@ namespace TGZG.战雷革命游戏服务器 {
 					房间描述 = "aaa",
 					房主 = "沈伊利",
 					人数 = 0,
-					地图名 = "测试地图",
+					地图名 = "休闲地图24.9.21",
 					房间密码 = "",
 					每秒同步次数 = 32
 				};

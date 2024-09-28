@@ -55,29 +55,6 @@ namespace TGZG.战雷革命游戏服务器 {
     public class 玩家管理信道类 : 网络信道服务器类_KCP {
         public 玩家管理信道类(ushort 端口, string 版本) : base(端口, 版本) {
             //处理客户端发来的消息
-            OnRead["登录"] = (客户端ID, t) => {
-                var 数据 = t["数据"].JsonToCS<玩家登录数据>();
-                if (数据.n is null or "") {
-                    return [("标题", "登录失败"), ("内容", "未填写名称")];
-                }
-                if (数据.tp == default) {
-                    return [("标题", "登录失败"), ("内容", "载具未选择")];
-                }
-                if (所有玩家.Contains(t => t.Value.世界.u.n == 数据.n)) {
-                    return [("标题", "登录失败"), ("内容", "该名称已被占用")];
-                }
-                lock (房间数据) {
-                    所有玩家.Add(客户端ID, (new() {
-                        u = 数据,
-                        p = 玩家世界数据.初始化(),
-                    }, new()));
-                    房间数据.人数 = 所有玩家.Count;
-                }
-                房间管理信道.房间数据更新();
-                $"玩家 {数据.n}({数据.n.ToString()}) 登录".log();
-                广播系统消息("系统消息", $"玩家 {数据.n} 已登录");
-                return [("标题", "登录成功"), ("其他玩家数据", 获取其他玩家数据(客户端ID).ToJson(格式美化: false))];
-            };
             OnRead["更新位置"] = (客户端ID, t) => {
                 var 数据 = t["数据"].JsonToCS<玩家游玩数据>(false);
                 lock (所有玩家) {
@@ -143,9 +120,20 @@ namespace TGZG.战雷革命游戏服务器 {
                 广播系统消息("系统消息", $"{攻击者名称} 击中了 {玩家名称},对 {数据.bp.ToString()} 造成 {数据.dm} 点伤害");
                 return null;
             };
-            OnConnected += (客户端ID) => {
+            //OnConnected += (客户端ID) => {
+            //    //向列表服务器请求
+            //    lock (房间数据) {
+            //        所有玩家.Add(客户端ID, (new() {
+            //            u = 数据,
+            //            p = 玩家世界数据.初始化(),
+            //        }, new()));
+            //        房间数据.人数 = 所有玩家.Count;
+            //    }
+            //    房间管理信道.房间数据更新();
+            //    $"玩家 {数据.n}({数据.n.ToString()})  进入".log();
+            //    广播系统消息("系统消息", $"玩家 {数据.n} 已登录");
 
-            };
+            //};
             OnDisconnected += (客户端ID) => {
                 if (所有玩家.ContainsKey(客户端ID)) {
                     var 玩家数据 = 所有玩家[客户端ID];
@@ -369,9 +357,16 @@ namespace TGZG.战雷革命游戏服务器 {
         public DateTime 房间创建时间;
 		//C/S端模组同步逻辑这块还待补充。
 		public ModInfo[] 模组列表;
-	}
-
-	[JsonObject]
+        public 模式类型 模式;
+        public List<载具类型> 可选载具;
+        public List<队伍> 可选队伍;
+    }
+    public enum 模式类型 {
+        休闲,
+        竞技,
+        自定义
+    }
+    [JsonObject]
 	public class ModInfo {
 		[JsonProperty(Required = Required.Always, PropertyName = "Name")]
 		internal string _name;
