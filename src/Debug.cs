@@ -9,5 +9,15 @@ namespace TGZG {
         public static void log(this object 消息) {
             消息.Log();
         }
+        public static void logerror(this object message) {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(message);
+            Console.ResetColor();
+        }
+        public static void logwarning(this object message) {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine(message);
+            Console.ResetColor();
+        }
     }
 }

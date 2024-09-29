@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using static CMKZ.LocalStorage;
 using static TGZG.战雷革命游戏服务器.公共空间;
 
@@ -12,7 +13,7 @@ namespace TGZG.战雷革命游戏服务器 {
     public static partial class 公共空间 {
         public static Dictionary<int, (玩家游玩数据 世界, HashSet<部位> 损坏部位)> 所有玩家 = new();
     }
-	// 自由空域房间管理协议的客户端实现。
+    // 自由空域房间管理协议的客户端实现。
     public class 房间管理信道类 : 网络信道类 {
         public 房间管理信道类(string ip, string 版本) : base(ip, 版本) {
             OnDisconnect += () => {
@@ -36,7 +37,7 @@ namespace TGZG.战雷革命游戏服务器 {
             }
             Print("收到服务器消息，但内容异常。错误码6678");
         }
-        public async void 发送注册消息() {
+        public async void 发送注册房间() {
             var 消息 = await 游戏端.SendAsync(new() {
                 { "标题","注册" },
                 { "数据", 房间数据.ToJson(格式美化: false) }
@@ -50,6 +51,20 @@ namespace TGZG.战雷革命游戏服务器 {
                 return;
             }
             Print("收到服务器消息，但内容异常。错误码6677");
+        }
+        public async Task<(bool 成功, string 内容)> 验证登录(string 账号, string 密码) {
+            var 消息 = await 游戏端.SendAsync(new() {
+                { "标题","验证登录" },
+                { "账号", 账号 },
+                { "密码", 密码 }
+            });
+            if (消息.ContainsKey("失败")) {
+                return (false, 消息["失败"]);
+            }
+            if (消息.ContainsKey("成功")) {
+                return (true, 消息["成功"]);
+            }
+            return (false, "登录服务器验证异常，请联系管理员。错误码6676");
         }
     }
     public class 玩家管理信道类 : 网络信道服务器类_KCP {
@@ -120,20 +135,29 @@ namespace TGZG.战雷革命游戏服务器 {
                 广播系统消息("系统消息", $"{攻击者名称} 击中了 {玩家名称},对 {数据.bp.ToString()} 造成 {数据.dm} 点伤害");
                 return null;
             };
-            //OnConnected += (客户端ID) => {
-            //    //向列表服务器请求
-            //    lock (房间数据) {
-            //        所有玩家.Add(客户端ID, (new() {
-            //            u = 数据,
-            //            p = 玩家世界数据.初始化(),
-            //        }, new()));
-            //        房间数据.人数 = 所有玩家.Count;
-            //    }
-            //    房间管理信道.房间数据更新();
-            //    $"玩家 {数据.n}({数据.n.ToString()})  进入".log();
-            //    广播系统消息("系统消息", $"玩家 {数据.n} 已登录");
-
-            //};
+            OnRead["验证登录"] = (客户端ID, t) => {
+                //向房间管理服务器发送验证登录请求，等待返回验证结果
+                var 账号 = t["账号"];
+                var 密码 = t["密码"];
+                var 验证结果 = 房间管理信道.验证登录(账号, 密码).Result;
+                if (验证结果.成功)
+                    return [("标题", "登录验证结果"), ("状态", "成功"), ("消息", 验证结果.内容)];
+                else
+                    return [("标题", "登录验证结果"), ("状态", "失败"), ("消息", 验证结果.内容)];
+            };
+            OnConnected += (客户端ID) => {
+                ////向列表服务器请求
+                //lock (房间数据) {
+                //    所有玩家.Add(客户端ID, (new() {
+                //        u = 数据,
+                //        p = 玩家世界数据.初始化(),
+                //    }, new()));
+                //    房间数据.人数 = 所有玩家.Count;
+                //}
+                //房间管理信道.房间数据更新();
+                //$"玩家 {数据.n}({数据.n.ToString()})  进入".log();
+                //广播系统消息("系统消息", $"玩家 {数据.n} 已登录");
+            };
             OnDisconnected += (客户端ID) => {
                 if (所有玩家.ContainsKey(客户端ID)) {
                     var 玩家数据 = 所有玩家[客户端ID];
@@ -269,13 +293,14 @@ namespace TGZG.战雷革命游戏服务器 {
 
 
             OnRead["数据错误"] = (c, t) => {
-                Log.Info($"[KCP] 收到错误标题数据：{t.ToJson(格式美化: false)}");
+                $"[KCP] 收到错误标题数据：{t.ToJson(格式美化: false)}".logerror();
                 return null;
             };
             OnData += (客户端ID, 数据, 频道) => {
                 //处理空数据包
                 if (数据.Array == null) {
-                    Send(客户端ID, ("标题", "数据错误"), ("内容", "数据内容为空"));
+                    $"[KCP] 收到空数据包，客户端ID：{客户端ID}，频道：{频道}".logerror();
+                    //Send(客户端ID, ("标题", "数据错误"), ("内容", "数据内容为空"));
                     return;
                 }
                 //转码数据包
@@ -283,13 +308,15 @@ namespace TGZG.战雷革命游戏服务器 {
                 var 解析后 = 数据json.JsonToCS<Dictionary<string, string>>();
                 //处理无标题数据包
                 if (!解析后.ContainsKey("标题")) {
-                    Send(客户端ID, ("标题", "数据错误"), ("内容", "数据不含标题"));
+                    $"[KCP] 收到无标题数据包，客户端ID：{客户端ID}，频道：{频道}".logerror();
+                    //Send(客户端ID, ("标题", "数据错误"), ("内容", "数据不含标题"));
                     return;
                 }
                 var 标题 = 解析后["标题"];
                 //处理异常标题数据包
                 if (!OnRead.ContainsKey(标题)) {
-                    Send(客户端ID, ("标题", "数据错误"), ("内容", $"未知数据标题，请检查游戏版本。当前服务器版本：{版本}。发来的标题：{标题}"));
+                    $"[KCP] 未知数据标题，请检查游戏版本。当前服务器版本：{版本}。发来的标题：{标题}".logerror();
+                    //Send(客户端ID, ("标题", "数据错误"), ("内容", $"未知数据标题，请检查游戏版本。当前服务器版本：{版本}。发来的标题：{标题}"));
                     return;
                 }
                 //进入数据处理流程并返回对应消息
@@ -355,8 +382,8 @@ namespace TGZG.战雷革命游戏服务器 {
         public string 房间版本;
         public int 每秒同步次数;
         public DateTime 房间创建时间;
-		//C/S端模组同步逻辑这块还待补充。
-		public ModInfo[] 模组列表;
+        //C/S端模组同步逻辑这块还待补充。
+        public ModInfo[] 模组列表;
         public 模式类型 模式;
         public List<载具类型> 可选载具;
         public List<队伍> 可选队伍;
@@ -367,54 +394,54 @@ namespace TGZG.战雷革命游戏服务器 {
         自定义
     }
     [JsonObject]
-	public class ModInfo {
-		[JsonProperty(Required = Required.Always, PropertyName = "Name")]
-		internal string _name;
-		[JsonProperty(Required = Required.Always, PropertyName = "Description")]
-		internal string _description;
-		[JsonProperty(Required = Required.Always, PropertyName = "Author")]
-		internal string _author;
-		[JsonProperty(Required = Required.Always, PropertyName = "Version")]
-		internal string _version;
-		[JsonProperty(Required = Required.Always, PropertyName = "Guid")]
-		internal string _guid;
-		[JsonProperty(Required = Required.Always, PropertyName = "ModPackSha512SumAsBase64EncodedString")]
-		internal string _modPackSha512SumAsBase64EncodedString;
+    public class ModInfo {
+        [JsonProperty(Required = Required.Always, PropertyName = "Name")]
+        internal string _name;
+        [JsonProperty(Required = Required.Always, PropertyName = "Description")]
+        internal string _description;
+        [JsonProperty(Required = Required.Always, PropertyName = "Author")]
+        internal string _author;
+        [JsonProperty(Required = Required.Always, PropertyName = "Version")]
+        internal string _version;
+        [JsonProperty(Required = Required.Always, PropertyName = "Guid")]
+        internal string _guid;
+        [JsonProperty(Required = Required.Always, PropertyName = "ModPackSha512SumAsBase64EncodedString")]
+        internal string _modPackSha512SumAsBase64EncodedString;
 
-		/// <summary>
-		/// 模组包的Sha512校验和(以BASE64编码)。
-		/// </summary>
-		[JsonIgnore]
-		public string ModPackSha512SumAsBase64EncodedString { get => this._modPackSha512SumAsBase64EncodedString; }
+        /// <summary>
+        /// 模组包的Sha512校验和(以BASE64编码)。
+        /// </summary>
+        [JsonIgnore]
+        public string ModPackSha512SumAsBase64EncodedString { get => this._modPackSha512SumAsBase64EncodedString; }
 
-		/// <summary>
-		/// 模组的一般名称
-		/// </summary>
-		[JsonIgnore]
-		public string Name { get => this._name; }
+        /// <summary>
+        /// 模组的一般名称
+        /// </summary>
+        [JsonIgnore]
+        public string Name { get => this._name; }
 
-		/// <summary>
-		/// 模组的描述
-		/// </summary>
-		[JsonIgnore]
-		public string Description { get => this._description; }
+        /// <summary>
+        /// 模组的描述
+        /// </summary>
+        [JsonIgnore]
+        public string Description { get => this._description; }
 
-		/// <summary>
-		/// 模组的作者
-		/// </summary>
-		[JsonIgnore]
-		public string Author { get => this._author; }
+        /// <summary>
+        /// 模组的作者
+        /// </summary>
+        [JsonIgnore]
+        public string Author { get => this._author; }
 
-		/// <summary>
-		/// 模组的版本
-		/// </summary>
-		[JsonIgnore]
-		public string Version { get => this._version; }
+        /// <summary>
+        /// 模组的版本
+        /// </summary>
+        [JsonIgnore]
+        public string Version { get => this._version; }
 
-		/// <summary>
-		/// 模组的GUID标识符
-		/// </summary>
-		[JsonIgnore]
-		public string Guid { get => this._guid; }
-	}
+        /// <summary>
+        /// 模组的GUID标识符
+        /// </summary>
+        [JsonIgnore]
+        public string Guid { get => this._guid; }
+    }
 }
