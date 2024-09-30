@@ -11,7 +11,7 @@ using static TGZG.战雷革命游戏服务器.公共空间;
 
 namespace TGZG.战雷革命游戏服务器 {
     public static partial class 公共空间 {
-        public static Dictionary<int, (玩家游玩数据 世界, HashSet<部位> 损坏部位)> 所有玩家 = new();
+        public static Dictionary<int, 玩家游玩数据> 所有玩家 = new();
     }
     // 自由空域房间管理协议的客户端实现。
     public class 房间管理信道类 : 网络信道类 {
@@ -73,7 +73,7 @@ namespace TGZG.战雷革命游戏服务器 {
             OnRead["更新位置"] = (客户端ID, t) => {
                 var 数据 = t["数据"].JsonToCS<玩家游玩数据>(false);
                 lock (所有玩家) {
-                    所有玩家[客户端ID] = (数据, 所有玩家[客户端ID].损坏部位);
+                    所有玩家[客户端ID] = 数据;
                 }
                 return null;
             };
@@ -85,85 +85,86 @@ namespace TGZG.战雷革命游戏服务器 {
                 return null;
             };
             OnRead["重生"] = (客户端ID, t) => {
-                所有玩家[客户端ID].损坏部位.Clear();
-                广播重生消息(所有玩家[客户端ID].世界);
+                广播重生消息(所有玩家[客户端ID], 客户端ID);
                 return null;
             };
             OnRead["导弹发射"] = (客户端ID, t) => {
                 var 数据 = t["数据"].JsonToCS<导弹飞行数据>(false);
-                广播导弹发射消息(所有玩家[客户端ID].世界, 数据);
+                广播导弹发射消息(所有玩家[客户端ID], 数据);
                 return null;
             };
             OnRead["导弹爆炸"] = (客户端ID, t) => {
                 var 数据 = t["数据"].JsonToCS<导弹飞行数据>(false);
-                广播导弹爆炸消息(所有玩家[客户端ID].世界, 数据);
+                广播导弹爆炸消息(所有玩家[客户端ID], 数据);
                 return null;
             };
-            //发来此消息者，表示自己被击中损坏或碰撞损坏。
+            //发来此消息者，表示自己碰撞损坏。
             OnRead["损坏"] = (客户端ID, t) => {
                 部位 数据 = Enum.Parse<部位>(t["数据"]);
                 //收到损坏信息时，找到此玩家，并广播给其他玩家
                 var 玩家客户端信息 = 所有玩家.FirstOrDefault(t => t.Key == 客户端ID);
                 if (玩家客户端信息.Key == default) return null;
-                lock (所有玩家) {
-                    玩家客户端信息.Value.损坏部位.Add(数据);
-                }
-                var 玩家客户端ID = 玩家客户端信息.Key;
-                var 玩家名称 = 玩家客户端信息.Value.世界.u.n;
+                var 玩家名称 = 玩家客户端信息.Value.u.n;
                 if (数据 is 部位.身) {
                     发送死亡信息(客户端ID);
                     广播死亡消息(玩家名称);
-                } else {
-                    同步损坏(玩家名称, 玩家客户端信息.Value.损坏部位.ToList());
-                }
+                } 
                 return null;
             };
             //发来此消息者，表示成功攻击其他玩家，执行响应操作
             OnRead["击伤"] = (客户端ID, t) => {
                 击伤信息 数据 = t["数据"].JsonToCS<击伤信息>();
                 //收到击伤信息时，找到被击伤的玩家，向它发送击伤消息
-                var 玩家客户端信息 = 所有玩家.FirstOrDefault(t => t.Value.世界.u.n == 数据.ths);
+                var 玩家客户端信息 = 所有玩家.FirstOrDefault(t => t.Value.u.n == 数据.ths);
                 if (玩家客户端信息.Key == default) return null;
                 var 玩家客户端ID = 玩家客户端信息.Key;
-                var 玩家名称 = 玩家客户端信息.Value.世界.u.n;
+                var 玩家名称 = 玩家客户端信息.Value.u.n;
 
                 var 攻击者客户端信息 = 所有玩家.FirstOrDefault(t => t.Key == 客户端ID);
                 if (攻击者客户端信息.Key == default) return null;
-                var 攻击者名称 = 攻击者客户端信息.Value.世界.u.n;
+                var 攻击者名称 = 攻击者客户端信息.Value.u.n;
 
                 发送击伤消息(玩家客户端ID, 数据);
                 广播系统消息("系统消息", $"{攻击者名称} 击中了 {玩家名称},对 {数据.bp.ToString()} 造成 {数据.dm} 点伤害");
                 return null;
             };
+
             OnRead["验证登录"] = (客户端ID, t) => {
                 //向房间管理服务器发送验证登录请求，等待返回验证结果
                 var 账号 = t["账号"];
                 var 密码 = t["密码"];
                 var 验证结果 = 房间管理信道.验证登录(账号, 密码).Result;
-                if (验证结果.成功)
-                    return [("标题", "登录验证结果"), ("状态", "成功"), ("消息", 验证结果.内容)];
-                else
-                    return [("标题", "登录验证结果"), ("状态", "失败"), ("消息", 验证结果.内容)];
+                if (验证结果.成功) {
+                    lock (房间数据) {
+                        所有玩家.Add(客户端ID, new() {
+                            u = new() { n = 账号 },
+                            p = 玩家世界数据.初始化(),
+                        });
+                        房间数据.人数 = 所有玩家.Count;
+                    }
+                    房间管理信道.房间数据更新();
+                    $"玩家 {账号} 进入服务器".log();
+                    广播系统消息("系统消息", $"玩家 {账号} 已登录");
+
+                    return [
+                        ("标题", "登录验证结果"),
+                        ("状态", "成功"),
+                        ("消息", 验证结果.内容)];
+                } else
+                    return [
+                        ("标题", "登录验证结果"),
+                        ("状态", "失败"),
+                        ("消息", 验证结果.内容)];
             };
             OnConnected += (客户端ID) => {
-                ////向列表服务器请求
-                //lock (房间数据) {
-                //    所有玩家.Add(客户端ID, (new() {
-                //        u = 数据,
-                //        p = 玩家世界数据.初始化(),
-                //    }, new()));
-                //    房间数据.人数 = 所有玩家.Count;
-                //}
-                //房间管理信道.房间数据更新();
-                //$"玩家 {数据.n}({数据.n.ToString()})  进入".log();
-                //广播系统消息("系统消息", $"玩家 {数据.n} 已登录");
+
             };
             OnDisconnected += (客户端ID) => {
                 if (所有玩家.ContainsKey(客户端ID)) {
                     var 玩家数据 = 所有玩家[客户端ID];
                     所有玩家.Remove(客户端ID);
-                    $"玩家 {玩家数据.世界.u.n} 已下线".log();
-                    广播系统消息("系统消息", $"玩家 {玩家数据.世界.u.n} 已下线");
+                    $"玩家 {玩家数据.u.n} 已下线".log();
+                    广播系统消息("系统消息", $"玩家 {玩家数据.u.n} 已下线");
                     lock (房间数据) {
                         房间数据.人数 = 所有玩家.Count;
                     }
@@ -184,21 +185,21 @@ namespace TGZG.战雷革命游戏服务器 {
                 ("数据", 数据.ToJson())
                 );
         }
-        public void 同步损坏(string 损坏玩家名, List<部位> 数据) {
-            SendAll(
-                ("标题", "同步损坏"),
-                ("玩家", 损坏玩家名),
-                ("数据", 数据.ToJson())
-                );
-        }
+        //public void 同步损坏(string 损坏玩家名, List<部位> 数据) {
+        //    SendAll(
+        //        ("标题", "同步损坏"),
+        //        ("玩家", 损坏玩家名),
+        //        ("数据", 数据.ToJson())
+        //        );
+        //}
         public void 发送死亡信息(int 客户端ID) {
             var 玩家数据 = 所有玩家[客户端ID];
             Send(客户端ID,
                 ("标题", "死亡")
                 );
         }
-        public void 广播重生消息(玩家游玩数据 玩家数据) {
-            SendAll(
+        public void 广播重生消息(玩家游玩数据 玩家数据, int 排除客户端ID) {
+            SendAll(排除客户端ID,
                 ("标题", "同步重生"),
                 ("玩家", 玩家数据.ToJson()));
         }
@@ -215,7 +216,7 @@ namespace TGZG.战雷革命游戏服务器 {
                 ("玩家", 玩家名称));
         }
         public void 广播玩家消息(int 发送者ID, string 消息内容, 队伍 队伍) {
-            var 发送者 = 所有玩家[发送者ID].世界.u.n;
+            var 发送者 = 所有玩家[发送者ID].u.n;
             SendAll(
                 ("标题", "聊天消息"),
                 ("内容", 消息内容),
@@ -241,9 +242,9 @@ namespace TGZG.战雷革命游戏服务器 {
             var 所有其他玩家数据 = 获取其他玩家数据(客户端ID);
             Send(客户端ID,
                 ("标题", "同步其他玩家数据"),
-                ("其他玩家", 所有其他玩家数据.Select(t => t.世界).ToJson(格式美化: false)));
+                ("其他玩家", 所有其他玩家数据.Select(t => t).Where(t => t.u.tp != default).ToJson(格式美化: false)));
         }
-        public List<(玩家游玩数据 世界, HashSet<部位> 损坏部位)> 获取其他玩家数据(int 请求者ID) {
+        public List<玩家游玩数据> 获取其他玩家数据(int 请求者ID) {
             lock (所有玩家) {
                 return 所有玩家.Where(t => t.Key != 请求者ID).Select(t => t.Value).ToList();
             }
@@ -289,7 +290,9 @@ namespace TGZG.战雷革命游戏服务器 {
             OnConnected = (cId) => { Log.Info($"[KCP] OnServerConnected({cId})"); };
             //OnData = (cId, message, channel) => Log.Info($"[KCP] OnServerDataReceived({cId}, {BitConverter.ToString(message.Array, message.Offset, message.Count)} @ {channel})");
             OnDisconnected = (cId) => { };
-            OnError = (cId, error, reason) => Log.Error($"[KCP] OnServerError({cId}, {error}, {reason}");
+            OnError = (cId, error, reason) => {
+                $"[KCP] OnServerError({cId}, {error}, {reason}".logerror();
+            };
 
 
             OnRead["数据错误"] = (c, t) => {

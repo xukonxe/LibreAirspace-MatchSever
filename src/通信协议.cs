@@ -12,6 +12,7 @@ namespace TGZG.战雷革命游戏服务器 {
         public 队伍 tm;
         public int[] 射;
         public List<导弹飞行数据> msl;
+        public HashSet<部位> 损坏;
         public void 三位保留() {
             //所有float只保留三位小数
             p.p = p.p.Select(t => (float)Math.Round(t, 3)).ToArray();

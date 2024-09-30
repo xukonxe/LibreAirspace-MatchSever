@@ -6,7 +6,7 @@ using static CMKZ.LocalStorage;
 
 namespace TGZG.战雷革命游戏服务器 {
     public static partial class 公共空间 {
-        public static string 版本 => "v0.13-Beta";
+        public static string 版本 => "v0.13";
         public static 房间参数类 房间数据;
         //==========端口定义===========
         //16312:服务器<=>房间服务器
