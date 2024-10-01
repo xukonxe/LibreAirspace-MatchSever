@@ -12,6 +12,7 @@ using static TGZG.战雷革命游戏服务器.公共空间;
 namespace TGZG.战雷革命游戏服务器 {
     public static partial class 公共空间 {
         public static Dictionary<int, 玩家游玩数据> 所有玩家 = new();
+        public static 休闲模式计分板 休闲计分板 = new();
     }
     // 自由空域房间管理协议的客户端实现。
     public class 房间管理信道类 : 网络信道类 {
@@ -52,6 +53,13 @@ namespace TGZG.战雷革命游戏服务器 {
             }
             Print("收到服务器消息，但内容异常。错误码6677");
         }
+        public async void 玩家数据更新(string 玩家昵称, 玩家计分数据 统计数据) {
+            await 游戏端.SendAsync(new() {
+                { "标题","玩家数据上传" },
+                { "账号", 玩家昵称 },
+                { "数据", 统计数据.ToJson(格式美化: false) }
+            });
+        }
         public async Task<(bool 成功, string 内容)> 验证登录(string 账号, string 密码) {
             var 消息 = await 游戏端.SendAsync(new() {
                 { "标题","验证登录" },
@@ -72,8 +80,12 @@ namespace TGZG.战雷革命游戏服务器 {
             //处理客户端发来的消息
             OnRead["更新位置"] = (客户端ID, t) => {
                 var 数据 = t["数据"].JsonToCS<玩家游玩数据>(false);
+                var 老数据 = 所有玩家[客户端ID];
                 lock (所有玩家) {
                     所有玩家[客户端ID] = 数据;
+                }
+                lock (休闲计分板) {
+                    休闲计分板.玩家位置更新(所有玩家[客户端ID].u.n, 老数据.p, 数据.p);
                 }
                 return null;
             };
@@ -81,6 +93,9 @@ namespace TGZG.战雷革命游戏服务器 {
                 var 发送者 = t["发送者"];
                 var 内容 = t["内容"];
                 var 广播内容 = 内容;
+                lock (休闲计分板) {
+                    休闲计分板.玩家聊天(发送者);
+                }
                 广播玩家消息(客户端ID, 广播内容, 队伍.无);
                 return null;
             };
@@ -98,8 +113,9 @@ namespace TGZG.战雷革命游戏服务器 {
                 广播导弹爆炸消息(所有玩家[客户端ID], 数据);
                 return null;
             };
-            //发来此消息者，表示自己碰撞损坏。
+            //发来此消息者，表示自己已被损坏。
             OnRead["损坏"] = (客户端ID, t) => {
+                string 攻击者 = t["攻击者"];
                 部位 数据 = Enum.Parse<部位>(t["数据"]);
                 //收到损坏信息时，找到此玩家，并广播给其他玩家
                 var 玩家客户端信息 = 所有玩家.FirstOrDefault(t => t.Key == 客户端ID);
@@ -108,7 +124,12 @@ namespace TGZG.战雷革命游戏服务器 {
                 if (数据 is 部位.身) {
                     发送死亡信息(客户端ID);
                     广播死亡消息(玩家名称);
-                } 
+                    lock (休闲计分板) {
+                        休闲计分板.玩家死亡(玩家名称);
+                        休闲计分板.玩家击杀(攻击者);
+                    }
+                    发送击杀提示(攻击者, 玩家名称);
+                }
                 return null;
             };
             //发来此消息者，表示成功攻击其他玩家，执行响应操作
@@ -123,6 +144,10 @@ namespace TGZG.战雷革命游戏服务器 {
                 var 攻击者客户端信息 = 所有玩家.FirstOrDefault(t => t.Key == 客户端ID);
                 if (攻击者客户端信息.Key == default) return null;
                 var 攻击者名称 = 攻击者客户端信息.Value.u.n;
+
+                lock (休闲计分板) {
+                    休闲计分板.玩家击伤(攻击者名称);
+                }
 
                 发送击伤消息(玩家客户端ID, 数据);
                 广播系统消息("系统消息", $"{攻击者名称} 击中了 {玩家名称},对 {数据.bp.ToString()} 造成 {数据.dm} 点伤害");
@@ -141,6 +166,9 @@ namespace TGZG.战雷革命游戏服务器 {
                             p = 玩家世界数据.初始化(),
                         });
                         房间数据.人数 = 所有玩家.Count;
+                    }
+                    lock (休闲计分板) {
+                        休闲计分板.添加玩家(账号);
                     }
                     房间管理信道.房间数据更新();
                     $"玩家 {账号} 进入服务器".log();
@@ -168,6 +196,9 @@ namespace TGZG.战雷革命游戏服务器 {
                     lock (房间数据) {
                         房间数据.人数 = 所有玩家.Count;
                     }
+                    lock (休闲计分板) {
+                        房间管理信道.玩家数据更新(玩家数据.u.n, 休闲计分板.最终转化(玩家数据.u.n));
+                    }
                     房间管理信道.房间数据更新();
                 }
             };
@@ -178,6 +209,15 @@ namespace TGZG.战雷革命游戏服务器 {
                     }
                 }
             };
+        }
+
+        public void 更新计分板((计分板数据 蓝队数据, 计分板数据 红队数据) 计分板数据) {
+            "更新计分板".log();
+            SendAll(
+                ("标题", "更新计分板"),
+                ("蓝队数据", 计分板数据.蓝队数据.ToJson(格式美化: false)),
+                ("红队数据", 计分板数据.红队数据.ToJson(格式美化: false))
+            );
         }
         public void 发送击伤消息(int 客户端ID, 击伤信息 数据) {
             Send(客户端ID,
@@ -192,6 +232,14 @@ namespace TGZG.战雷革命游戏服务器 {
         //        ("数据", 数据.ToJson())
         //        );
         //}
+        public void 发送击杀提示(string 攻击者, string 被攻击者) {
+            var 攻击者ID = 所有玩家.FirstOrDefault(t => t.Value.u.n == 攻击者).Key;
+            if (攻击者ID == default) return;
+            Send(攻击者ID,
+                ("标题", "击杀提示"),
+                ("被击杀者", 被攻击者)
+                );
+        }
         public void 发送死亡信息(int 客户端ID) {
             var 玩家数据 = 所有玩家[客户端ID];
             Send(客户端ID,
@@ -395,6 +443,91 @@ namespace TGZG.战雷革命游戏服务器 {
         休闲,
         竞技,
         自定义
+    }
+
+    public class 休闲模式计分板 {
+        public Dictionary<string, 玩家计分数据> 所有玩家KDA = new();
+        public Action<休闲模式计分板> On计分板更新;
+        public void 添加玩家(string 名称) {
+            所有玩家KDA[名称] = new 玩家计分数据();
+            On计分板更新?.Invoke(this);
+        }
+        public void 删除玩家(string 名称) {
+            所有玩家KDA.Remove(名称);
+            On计分板更新?.Invoke(this);
+        }
+        public 玩家计分数据 最终转化(string 名称) {
+            if (!验证存在性(名称)) return new 玩家计分数据();
+            var 玩家数据 = 所有玩家KDA[名称];
+            玩家数据.最终计算();
+            return 玩家数据;
+        }
+
+        public void 玩家位置更新(string 名称, 玩家世界数据 老位置, 玩家世界数据 新位置) {
+            if (!验证存在性(名称)) return;
+            //计算高度变化，如果高度变化大于0，则认为是爬高
+            var 高度差 = 新位置.p[1] - 老位置.p[1];
+            if (高度差 > 0) {
+                所有玩家KDA[名称].爬高高度累计 += 高度差;
+            }
+        }
+        public void 玩家击伤(string 名称) {
+            if (!验证存在性(名称)) return;
+            所有玩家KDA[名称].子弹命中次数++;
+            On计分板更新?.Invoke(this);
+        }
+        public void 玩家击杀(string 名称) {
+            if (!验证存在性(名称)) return;
+            所有玩家KDA[名称].击杀数++;
+            On计分板更新?.Invoke(this);
+        }
+        public void 玩家死亡(string 名称) {
+            if (!验证存在性(名称)) return;
+            所有玩家KDA[名称].死亡数++;
+            On计分板更新?.Invoke(this);
+        }
+        public void 玩家聊天(string 名称) {
+            if (!验证存在性(名称)) return;
+            所有玩家KDA[名称].消息发送总数++;
+        }
+        bool 验证存在性(string 名称) {
+            return 所有玩家KDA.ContainsKey(名称);
+        }
+
+        public (计分板数据, 计分板数据) To计分板数据() {
+            var 蓝队计分板数据 = new 计分板数据();
+            var 红队计分板数据 = new 计分板数据();
+            //添加列：玩家名、击杀、死亡、命中;
+            蓝队计分板数据.初始化列定义("玩家名", "击杀", "死亡", "命中");
+            红队计分板数据.初始化列定义("玩家名", "击杀", "死亡", "命中");
+            //添加行：玩家名、击杀、死亡、命中;
+            var 玩家 =
+            所有玩家KDA
+                .Select(t => new string[]{
+                    t.Key,
+                    t.Value.击杀数.ToString(),
+                    t.Value.死亡数.ToString(),
+                    t.Value.子弹命中次数.ToString()
+                });
+
+            玩家
+                .Where(t => {
+                    if (所有玩家.Contains(s => s.Value.u.n == t[0])) return false;
+                    var 此玩家 = 所有玩家.FirstOrDefault(s => s.Value.u.n == t[0]);
+                    return 此玩家.Value.tm is 队伍.蓝;
+                })
+                .ForEach(s => 蓝队计分板数据.添加行(s));
+
+            玩家
+                .Where(t => {
+                    if (所有玩家.Contains(s => s.Value.u.n == t[0])) return false;
+                    var 此玩家 = 所有玩家.FirstOrDefault(s => s.Value.u.n == t[0]);
+                    return 此玩家.Value.tm is 队伍.红;
+                })
+                .ForEach(s => 红队计分板数据.添加行(s));
+
+            return (蓝队计分板数据, 红队计分板数据);
+        }
     }
     [JsonObject]
     public class ModInfo {

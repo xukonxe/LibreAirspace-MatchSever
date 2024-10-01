@@ -8,6 +8,7 @@ namespace TGZG.战雷革命游戏服务器 {
     public static partial class 公共空间 {
         public static string 版本 => "v0.13";
         public static 房间参数类 房间数据;
+        public static 积分数据 房间积分;
         //==========端口定义===========
         //16312:服务器<=>房间服务器
         //16313:客户端<=>房间服务器
@@ -20,8 +21,8 @@ namespace TGZG.战雷革命游戏服务器 {
         //        ||=================||
 
         //============================
-        //public static 房间管理信道类 房间管理信道 = new("47.97.112.35:16312", "0.0.5");
-        public static 房间管理信道类 房间管理信道 = new("127.0.0.1:16312", "0.0.5");
+        public static 房间管理信道类 房间管理信道 = new("47.97.112.35:16312", "0.0.5");
+        //public static 房间管理信道类 房间管理信道 = new("127.0.0.1:16312", "0.0.5");
         public static 玩家管理信道类 玩家管理信道 = new(16314, 版本);
         public static WTRev.TKTLib.Modding.ModManager.ModManager 模组管理器 = null;
 
@@ -47,6 +48,15 @@ namespace TGZG.战雷革命游戏服务器 {
             玩家管理信道.Start(房间数据.每秒同步次数);
 
             $"当前房间配置:\n{房间数据.ToJson()}".logwarning();
+            if (房间数据.模式 is 模式类型.休闲) {
+                休闲计分板.On计分板更新 += t => {
+                    (计分板数据, 计分板数据) 数据;
+                    lock (休闲计分板) {
+                        数据 = t.To计分板数据();
+                    }
+                    玩家管理信道.更新计分板(数据);
+                };
+            }
 
             房间管理信道.连接();
             房间管理信道.发送注册房间();

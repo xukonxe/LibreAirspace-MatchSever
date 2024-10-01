@@ -1,9 +1,11 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 namespace TGZG.战雷革命游戏服务器 {
-	public static partial class 公共空间 {
+    public static partial class 公共空间 {
 
     }
     public struct 玩家游玩数据 {
@@ -89,5 +91,44 @@ namespace TGZG.战雷革命游戏服务器 {
         蓝,
         红,
         系统
+    }
+    public struct 积分数据 {
+        public int 蓝队分数;
+        public int 蓝队总分数;
+        public int 红队分数;
+        public int 红队总分数;
+    }
+    public class 玩家计分数据 {
+        public int 击杀数 { get; set; }
+        public int 死亡数 { get; set; }
+        public int 助攻数 { get; set; }
+        public long 爬高总高度 { get; set; }
+        public long 能量转化总量 { get; set; }
+        public TimeSpan 语音总时长 { get; set; }
+        public long 消息发送总数 { get; set; }
+        public long 射出子弹总数 { get; set; }
+        public long 子弹命中次数 { get; set; }
+        [JsonIgnore]
+        public double 爬高高度累计 { get; set; }
+        public void 最终计算() {
+            爬高总高度 = (long)爬高高度累计;
+        }
+    }
+    public struct 计分板数据 {
+        public string[] 列定义;
+        public List<object[]> 列数据;
+        public void 初始化列定义(params string[] 列定义) {
+            this.列定义 = 列定义;
+            列数据 = new List<object[]>();
+        }
+        public void 添加行(params object[] 数据) {
+            if (数据.Length != 列定义.Length) {
+                "数据长度和列定义长度不一致".logerror();
+                return;
+            }
+        }
+        public object[] 取行(int 行号) {
+            return 列数据[行号];
+        }
     }
 }
