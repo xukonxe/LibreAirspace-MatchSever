@@ -99,10 +99,10 @@ namespace TGZG.战雷革命游戏服务器 {
                 广播玩家消息(客户端ID, 广播内容, 队伍.无);
                 return null;
             };
-            OnRead["重生"] = (客户端ID, t) => {
-                广播重生消息(所有玩家[客户端ID], 客户端ID);
-                return null;
-            };
+            //OnRead["重生"] = (客户端ID, t) => {
+            //    广播重生消息(所有玩家[客户端ID], 客户端ID);
+            //    return null;
+            //};
             OnRead["导弹发射"] = (客户端ID, t) => {
                 var 数据 = t["数据"].JsonToCS<导弹飞行数据>(false);
                 广播导弹发射消息(所有玩家[客户端ID], 数据);
@@ -115,42 +115,49 @@ namespace TGZG.战雷革命游戏服务器 {
             };
             //发来此消息者，表示自己已被损坏。
             OnRead["损坏"] = (客户端ID, t) => {
+                1.log();
                 string 攻击者 = t["攻击者"];
                 部位 数据 = Enum.Parse<部位>(t["数据"]);
                 //收到损坏信息时，找到此玩家，并广播给其他玩家
                 var 玩家客户端信息 = 所有玩家.FirstOrDefault(t => t.Key == 客户端ID);
+                2.log();
                 if (玩家客户端信息.Key == default) return null;
                 var 玩家名称 = 玩家客户端信息.Value.u.n;
+                3.log();
                 if (数据 is 部位.身) {
+                    4.log();
                     发送死亡信息(客户端ID);
                     广播死亡消息(玩家名称);
                     lock (休闲计分板) {
                         休闲计分板.玩家死亡(玩家名称);
                         休闲计分板.玩家击杀(攻击者);
                     }
-                    发送击杀提示(攻击者, 玩家名称);
+                    发送击杀提示(攻击者, 玩家名称); 
+                    广播系统消息("系统消息", $"{攻击者} 杀死了 {玩家名称}");
                 }
+                5.log();
                 return null;
             };
             //发来此消息者，表示成功攻击其他玩家，执行响应操作
             OnRead["击伤"] = (客户端ID, t) => {
                 击伤信息 数据 = t["数据"].JsonToCS<击伤信息>();
-                //收到击伤信息时，找到被击伤的玩家，向它发送击伤消息
-                var 玩家客户端信息 = 所有玩家.FirstOrDefault(t => t.Value.u.n == 数据.ths);
-                if (玩家客户端信息.Key == default) return null;
-                var 玩家客户端ID = 玩家客户端信息.Key;
-                var 玩家名称 = 玩家客户端信息.Value.u.n;
-
+                //收到击伤信息时，找到被击伤的玩家，向它发送击伤消息，并广播给其他玩家
+                var 被攻击玩家客户端信息 = 所有玩家.FirstOrDefault(t => t.Value.u.n == 数据.被攻者);
+                if (被攻击玩家客户端信息.Key == default) return null;
+                var 被攻击玩家客户端ID = 被攻击玩家客户端信息.Key;
+                var 被攻击玩家名称 = 被攻击玩家客户端信息.Value.u.n;
                 var 攻击者客户端信息 = 所有玩家.FirstOrDefault(t => t.Key == 客户端ID);
                 if (攻击者客户端信息.Key == default) return null;
                 var 攻击者名称 = 攻击者客户端信息.Value.u.n;
-
                 lock (休闲计分板) {
                     休闲计分板.玩家击伤(攻击者名称);
                 }
 
-                发送击伤消息(玩家客户端ID, 数据);
-                广播系统消息("系统消息", $"{攻击者名称} 击中了 {玩家名称},对 {数据.bp.ToString()} 造成 {数据.dm} 点伤害");
+                发送击伤消息(被攻击玩家客户端ID, 数据);
+                广播系统消息("系统消息", $"{攻击者名称} 击中了 {被攻击玩家名称},对 {数据.伤害.ToString()} 造成 {数据.部位.ToString()} 点伤害");
+                //发送击伤消息(客户端ID, 数据);
+                //广播系统消息("系统消息", $"您 击中了 您自己,对 {数据.bp.ToString()} 造成 {数据.dm} 点伤害");
+
                 return null;
             };
 
@@ -212,7 +219,6 @@ namespace TGZG.战雷革命游戏服务器 {
         }
 
         public void 更新计分板((计分板数据 蓝队数据, 计分板数据 红队数据) 计分板数据) {
-            "更新计分板".log();
             SendAll(
                 ("标题", "更新计分板"),
                 ("蓝队数据", 计分板数据.蓝队数据.ToJson(格式美化: false)),
@@ -234,6 +240,8 @@ namespace TGZG.战雷革命游戏服务器 {
         //}
         public void 发送击杀提示(string 攻击者, string 被攻击者) {
             var 攻击者ID = 所有玩家.FirstOrDefault(t => t.Value.u.n == 攻击者).Key;
+            攻击者.log();
+            被攻击者.log();
             if (攻击者ID == default) return;
             Send(攻击者ID,
                 ("标题", "击杀提示"),
@@ -246,11 +254,11 @@ namespace TGZG.战雷革命游戏服务器 {
                 ("标题", "死亡")
                 );
         }
-        public void 广播重生消息(玩家游玩数据 玩家数据, int 排除客户端ID) {
-            SendAll(排除客户端ID,
-                ("标题", "同步重生"),
-                ("玩家", 玩家数据.ToJson()));
-        }
+        //public void 广播重生消息(玩家游玩数据 玩家数据, int 排除客户端ID) {
+        //    SendAll(排除客户端ID,
+        //        ("标题", "同步重生"),
+        //        ("玩家", 玩家数据.ToJson()));
+        //}
         public void 广播系统消息(string 发送者, string 消息内容) {
             SendAll(
                 ("标题", "聊天消息"),
@@ -288,6 +296,7 @@ namespace TGZG.战雷革命游戏服务器 {
         }
         public void 更新世界数据(int 客户端ID) {
             var 所有其他玩家数据 = 获取其他玩家数据(客户端ID);
+            if (所有其他玩家数据.Count == 0) return;
             Send(客户端ID,
                 ("标题", "同步其他玩家数据"),
                 ("其他玩家", 所有其他玩家数据.Select(t => t).Where(t => t.u.tp != default).ToJson(格式美化: false)));

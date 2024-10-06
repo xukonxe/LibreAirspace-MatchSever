@@ -9,7 +9,7 @@ namespace TGZG.战雷革命游戏服务器 {
 
     }
     public struct 玩家游玩数据 {
-        public 玩家登录数据 u;
+        public 玩家进入数据 u;
         public 玩家世界数据 p;
         public 队伍 tm;
         public int[] 射;
@@ -23,7 +23,7 @@ namespace TGZG.战雷革命游戏服务器 {
             p.r = p.r.Select(t => (float)Math.Round(t, 3)).ToArray();
             for (int i = 0; i < msl.Count; i++) {
                 var n = new 导弹飞行数据();
-                n.i = msl[i].i;
+                n.编号 = msl[i].编号;
                 n.tp = msl[i].tp;
                 n.p = msl[i].p.Select(t => (float)Math.Round(t, 3)).ToArray();
                 n.d = msl[i].d.Select(t => (float)Math.Round(t, 3)).ToArray();
@@ -34,14 +34,15 @@ namespace TGZG.战雷革命游戏服务器 {
         }
     }
     public struct 导弹飞行数据 {
-        public int i;
-        public 导弹类型 tp;
+        public int 编号;
+        public 挂载类型 tp;
         public float[] p;
         public float[] d;
         public float[] v;
         public float[] r;
     }
-    public enum 导弹类型 {
+    public enum 挂载类型 {
+        无,
         AIM9E,
     }
     public enum 部位 {
@@ -56,13 +57,18 @@ namespace TGZG.战雷革命游戏服务器 {
         垂,
     }
     public struct 击伤信息 {
-        public string ths;
-        public float dm;
-        public 部位 bp;
+        public string 攻击者;
+        public string 被攻者;
+        public float 伤害;
+        public 部位 部位;
     }
-    public struct 玩家登录数据 {
+    public struct 玩家进入数据 {
         public string n;
         public 载具类型 tp;
+        public 队伍 tm;
+        public TimeSpan 油量;
+        public (string, string) 出生点;
+        public 挂载类型[] 挂载;
     }
     public struct 玩家世界数据 {
         public float[] p;
