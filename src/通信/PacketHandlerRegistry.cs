@@ -15,12 +15,12 @@ namespace TGZG.战雷革命游戏服务器 {
 
 		//Huh这个签名。
 		//这不也是返回了一个键值对的集合吗？我觉得要重新设计一下这个签名。
-		public delegate void PacketHandlerDelegate(int clientId, Dictionary<string, string> packetMessage, object additionalArg);
+		public delegate void PacketHandlerDelegate<TClientId, TAdditionalArg>(TClientId clientId, Dictionary<string, string> packetMessage, TAdditionalArg additionalArg);
 
 		/// <summary>
 		/// KCP服务器的数据包处理程序注册表操作的抽象。
 		/// </summary>
-		public interface IRegistry {
+		public interface IRegistry<TClientId, TAdditionalArg> {
 			/// <summary>
 			/// 注册数据包类型，需要数据包类型没有被注册或者数据包类型没有被协议保留。
 			/// </summary>
@@ -85,7 +85,7 @@ namespace TGZG.战雷革命游戏服务器 {
 			/// 没有 <paramref name="messageTitle"/> 所述的数据包类型被注册！
 			/// </para>
 			/// </returns>
-			OperateResult RegisterPacketHandler(string messageTitle, string handlerId, PacketHandlerDelegate callback);
+			OperateResult RegisterPacketHandler(string messageTitle, string handlerId, PacketHandlerDelegate<TClientId, TAdditionalArg> callback);
 
 			/// <summary>
 			/// 注销数据包处理程序。
@@ -104,7 +104,7 @@ namespace TGZG.战雷革命游戏服务器 {
 			/// 没有 <paramref name="messageTitle"/> 所述的数据包类型被注册！
 			/// </para>
 			/// </returns>
-			OperateResult UnregisterPacketHandler(string messageTitle, string handlerId, PacketHandlerDelegate callback);
+			OperateResult UnregisterPacketHandler(string messageTitle, string handlerId, PacketHandlerDelegate<TClientId, TAdditionalArg> callback);
 
 			/// <summary>
 			/// <para>获取注册表内所有已注册的数据包类型</para>
@@ -123,7 +123,7 @@ namespace TGZG.战雷革命游戏服务器 {
 			/// </remarks>
 			/// <param name="messageTitle">数据包类型</param>
 			/// <returns>注册表内特定数据包类型的所有处理程序，可能为空集合</returns>
-			IReadOnlyCollection<(string handlerId, PacketHandlerDelegate callback)> GetPacketHandlers(string messageTitle);
+			IReadOnlyCollection<(string handlerId, PacketHandlerDelegate<TClientId, TAdditionalArg> callback)> GetPacketHandlers(string messageTitle);
 
 			/// <summary>
 			/// 数据包类型注册表更改事件

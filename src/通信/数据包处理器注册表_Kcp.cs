@@ -7,14 +7,14 @@ using System.Text;
 using static CMKZ.LocalStorage;
 
 namespace TGZG.战雷革命游戏服务器 {
-	public class 数据包处理器注册表 : PacketHandlerRegistry.IRegistry {
+	public class 数据包处理器注册表_Kcp : PacketHandlerRegistry.IRegistry<int, object> {
 		/// <summary>
 		/// 特定数据包的回调函数列表的字典。
 		/// </summary>
 		/// <remarks>
 		/// 不应直接操作此字段，应该通过API间接操作。
 		/// </remarks>
-		protected Dictionary<string, List<(string callbackId, PacketHandlerRegistry.PacketHandlerDelegate callbackFn)>> m_Registry = new();
+		protected Dictionary<string, List<(string callbackId, PacketHandlerRegistry.PacketHandlerDelegate<int, object> callbackFn)>> m_Registry = new();
 
 		public PacketHandlerRegistry.OperateResult RegisterPacketType(string messageTitle) {
 			if (CommunicateConstant.GetReservedPacketType().Contains(messageTitle)) {
@@ -23,13 +23,13 @@ namespace TGZG.战雷革命游戏服务器 {
 			if (this.m_Registry.ContainsKey(messageTitle)) {
 				return PacketHandlerRegistry.OperateResult.EXISTED;
 			}
-			this.m_Registry.Add(messageTitle, new List<(string callbackId, PacketHandlerRegistry.PacketHandlerDelegate callbackFn)>());
+			this.m_Registry.Add(messageTitle, new List<(string callbackId, PacketHandlerRegistry.PacketHandlerDelegate<int, object> callbackFn)>());
 			this.OnPacketTypeRegistryUpdated();
 			return PacketHandlerRegistry.OperateResult.OK;
 		}
 
 		public PacketHandlerRegistry.OperateResult UnregisterPacketType(string messageTitle) {
-			KeyValuePair<string, List<ValueTuple<string, PacketHandlerRegistry.PacketHandlerDelegate>>> _ThePacketType = default;
+			KeyValuePair<string, List<ValueTuple<string, PacketHandlerRegistry.PacketHandlerDelegate<int, object>>>> _ThePacketType = default;
 			try {
 				// 遍历字典中的每一个键值对寻找对应的注册表项！
 				// 因为KeyValuePair是值类型所以得这样做而不是调用Linq的FirstOrDefault！
@@ -48,7 +48,7 @@ namespace TGZG.战雷革命游戏服务器 {
 		}
 
 		public PacketHandlerRegistry.OperateResult RegisterPacketHandler
-				(string messageTitle, string handlerId, PacketHandlerRegistry.PacketHandlerDelegate callback) {
+				(string messageTitle, string handlerId, PacketHandlerRegistry.PacketHandlerDelegate<int, object> callback) {
 			var _theRegistryItem = this.m_Registry[messageTitle];
 			if (_theRegistryItem != null) {
 				try {
@@ -69,7 +69,7 @@ namespace TGZG.战雷革命游戏服务器 {
 		}
 
 		public PacketHandlerRegistry.OperateResult UnregisterPacketHandler
-				(string messageTitle, string handlerId, PacketHandlerRegistry.PacketHandlerDelegate callback) {
+				(string messageTitle, string handlerId, PacketHandlerRegistry.PacketHandlerDelegate<int, object> callback) {
 			var _theRegistryItem = this.m_Registry[messageTitle];
 			if (_theRegistryItem != null) {
 				_theRegistryItem.RemoveAll(_CallbackRegistryItem => _CallbackRegistryItem.callbackId == handlerId);
@@ -83,13 +83,13 @@ namespace TGZG.战雷革命游戏服务器 {
 
 		public IReadOnlyCollection<string> GetAllRegisteredPacketType() => this.m_Registry.Keys;
 
-		public IReadOnlyCollection<(string handlerId, PacketHandlerRegistry.PacketHandlerDelegate callback)>
+		public IReadOnlyCollection<(string handlerId, PacketHandlerRegistry.PacketHandlerDelegate<int, object> callback)>
 				GetPacketHandlers(string messageTitle) {
 			var _PacketTypeRegistryItem = this.m_Registry[messageTitle];
 			if (_PacketTypeRegistryItem is not null) {
 				return _PacketTypeRegistryItem;
 			}
-			return Array.Empty<(string handlerId, PacketHandlerRegistry.PacketHandlerDelegate callback)>();
+			return Array.Empty<(string handlerId, PacketHandlerRegistry.PacketHandlerDelegate<int, object> callback)>();
 		}
 
 		public event Action OnPacketTypeRegistryUpdated = delegate { };

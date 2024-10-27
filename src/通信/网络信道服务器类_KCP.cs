@@ -20,7 +20,7 @@ namespace TGZG.战雷革命游戏服务器 {
 
         protected event Action OnUpdate;
 
-		protected 数据包处理器注册表 m_PacketHandlerRegistry = new();
+		protected 数据包处理器注册表_Kcp m_PacketHandlerRegistry = new();
 
 		protected HashSet<string> m_CachedPacketTypeList = null;
 
@@ -77,7 +77,7 @@ namespace TGZG.战雷革命游戏服务器 {
                     return;
                 }
                 //进入数据处理流程并返回对应消息
-                foreach ((string handlerId, PacketHandlerRegistry.PacketHandlerDelegate callback) _handler in this.m_PacketHandlerRegistry.GetPacketHandlers(标题))
+                foreach ((string handlerId, PacketHandlerRegistry.PacketHandlerDelegate<int, object> callback) _handler in this.m_PacketHandlerRegistry.GetPacketHandlers(标题))
                 {
 					_handler.callback(客户端ID, 解析后, this);
                 }
