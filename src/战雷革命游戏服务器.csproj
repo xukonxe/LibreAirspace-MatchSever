@@ -23,5 +23,6 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <Folder Include="WTRev.TKTLib.Modding\" />
+	  <Folder Include="ModSystemApi\" />
 	</ItemGroup>
 </Project>

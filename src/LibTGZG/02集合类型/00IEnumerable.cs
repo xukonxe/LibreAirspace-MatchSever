@@ -22,14 +22,6 @@ namespace CMKZ {
             }
             return A[Random(0, A.Count)];
         }
-        public static T First<T>(this IEnumerable<T> X) {
-            foreach (var i in X) {
-                return i;
-            }
-            PrintWarning("注意：正在对空集First");
-            return default;
-            //throw new Exception("错误：空集不允许First");
-        }
         public static T Find<T>(this IEnumerable<T> X, Func<T, bool> Y) {
             foreach (var i in X) {
                 if (Y(i)) {

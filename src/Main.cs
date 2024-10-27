@@ -21,8 +21,8 @@ namespace TGZG.战雷革命游戏服务器 {
         //        ||=================||
 
         //============================
-        public static 房间管理信道类 房间管理信道 = new("47.97.112.35:16312", "0.0.5");
-        //public static 房间管理信道类 房间管理信道 = new("127.0.0.1:16312", "0.0.5");
+        //public static 房间管理信道类 房间管理信道 = new("47.97.112.35:16312", "0.0.5");
+        public static 房间管理信道类 房间管理信道 = new("127.0.0.1:16312", "0.0.5");
         public static 玩家管理信道类 玩家管理信道 = new(16314, 版本);
         public static WTRev.TKTLib.Modding.ModManager.ModManager 模组管理器 = null;
 
@@ -34,16 +34,9 @@ namespace TGZG.战雷革命游戏服务器 {
 
             房间数据.房间版本 = 版本;
             房间数据.人数 = 0;
-            房间数据.房间创建时间 = DateTime.UtcNow;
-            房间数据.模组列表 = 模组管理器.GetLoadedMods().Select<WTRev.TKTLib.Modding.InfoCls.ModInfo, TGZG.战雷革命游戏服务器.ModInfo>(
-                _ModSys_ModInfo => new TGZG.战雷革命游戏服务器.ModInfo() {
-                    _author = _ModSys_ModInfo.Author,
-                    _description = _ModSys_ModInfo.Description,
-                    _guid = _ModSys_ModInfo.Guid,
-                    _name = _ModSys_ModInfo.Name,
-                    _version = _ModSys_ModInfo.Version,
-                    _modPackSha512SumAsBase64EncodedString = Convert.ToBase64String(_ModSys_ModInfo.m_ModPackSha512Sum)
-                }).ToArray();
+			房间数据.房间创建时间 = DateTime.UtcNow;
+			//这一行代码可能有点难以理解了（
+			房间数据.模组列表 = 模组管理器.GetLoadedMods().Select(ModInfo.CastFromModdingLibModInfo).ToArray();
 
             玩家管理信道.Start(房间数据.每秒同步次数);
 
