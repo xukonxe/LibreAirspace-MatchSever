@@ -222,7 +222,7 @@ namespace TGZG.战雷革命游戏服务器 {
 				_guid = moddingLibModInfo.Guid,
 				_name = moddingLibModInfo.Name,
 				_version = moddingLibModInfo.Version,
-				_modPackSha512SumAsBase64EncodedString = Convert.ToBase64String(moddingLibModInfo.m_ModPackSha512Sum)
+				_modPackSha512SumAsBase64EncodedString = Convert.ToBase64String(moddingLibModInfo.m_Sha512Sum)
 			};
 	}
 }

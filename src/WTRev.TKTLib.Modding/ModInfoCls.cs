@@ -73,7 +73,7 @@ namespace WTRev.TKTLib.Modding.InfoCls {
 		/// 模组包的Sha512校验和。
 		/// </summary>
 		[JsonIgnore]
-		public byte[] m_ModPackSha512Sum;
+		public byte[] m_Sha512Sum;
 
 		/// <summary>
 		/// 模组的一般名称
