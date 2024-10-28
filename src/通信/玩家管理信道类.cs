@@ -78,17 +78,13 @@ namespace TGZG.战雷革命游戏服务器 {
 			this.m_PacketHandlerRegistry.RegisterPacketType(PktTypTab.损坏);
 			this.m_PacketHandlerRegistry.RegisterPacketHandler(PktTypTab.损坏, "自由空域对局服务器__处理客户端损坏",
 				(客户端ID, t, addArg) => {
-					1.log();
 					string 攻击者 = t["攻击者"];
 					部位 数据 = Enum.Parse<部位>(t["数据"]);
 					//收到损坏信息时，找到此玩家，并广播给其他玩家
 					var 玩家客户端信息 = 所有玩家.FirstOrDefault(t => t.Key == 客户端ID);
-					2.log();
 					if (玩家客户端信息.Key == default) return;
 					var 玩家名称 = 玩家客户端信息.Value.u.n;
-					3.log();
 					if (数据 is 部位.身) {
-						4.log();
 						发送死亡信息(客户端ID);
 						广播死亡消息(玩家名称);
 						lock (休闲计分板) {
@@ -98,7 +94,6 @@ namespace TGZG.战雷革命游戏服务器 {
 						发送击杀提示(攻击者, 玩家名称);
 						广播系统消息("系统消息", $"{攻击者} 杀死了 {玩家名称}");
 					}
-					5.log();
 				});
 			//发来此消息者，表示成功攻击其他玩家，执行响应操作
 			this.m_PacketHandlerRegistry.RegisterPacketType(PktTypTab.击伤);
@@ -178,8 +173,6 @@ namespace TGZG.战雷革命游戏服务器 {
 		//}
 		public void 发送击杀提示(string 攻击者, string 被攻击者) {
 			var 攻击者ID = 所有玩家.FirstOrDefault(t => t.Value.u.n == 攻击者).Key;
-			攻击者.log();
-			被攻击者.log();
 			if (攻击者ID == default) return;
 			Send(攻击者ID,
 				("标题", "击杀提示"),
