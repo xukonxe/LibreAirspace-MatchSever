@@ -215,7 +215,7 @@ namespace TGZG.战雷革命游戏服务器 {
 			var 玩家客户端ID = 所有玩家.FirstOrDefault(t => t.Value.Equals(玩家数据)).Key;
 			SendAll(玩家客户端ID,
 				("标题", "导弹发射"),
-				("玩家", 玩家数据.ToJson(格式美化: false)),
+				("玩家", 玩家数据.u.n),
 				("导弹数据", 导弹数据.ToJson(格式美化: false)));
 		}
 		public void 广播导弹爆炸消息(玩家游玩数据 玩家数据, 导弹飞行数据 导弹数据) {
