@@ -1,20 +1,21 @@
 ﻿using System.Threading.Tasks;
+using CMKZ;
 using static CMKZ.LocalStorage;
 using static TGZG.战雷革命游戏服务器.公共空间;
 
 namespace TGZG.战雷革命游戏服务器 {
 	// 自由空域房间管理协议的客户端实现。
-	public class 房间管理信道类 : 网络信道类 {
+	public class 房间管理信道类 : Net.TcpClient {
 		public 房间管理信道类(string ip, string 版本) : base(ip, 版本) {
-			OnDisconnect += () => {
+			OnDisconnect += (tcpCl) => {
 				"房间信道断开".log();
 			};
 			OnConnect += () => {
-				$"房间信道已连接{房间管理信道.服务端IP}".log();
+				$"房间信道已连接{房间管理信道.IP}".log();
 			};
 		}
 		public async void 房间数据更新() {
-			var 消息 = await 游戏端.SendAsync(new() {
+			var 消息 = await base.SendAsync(new() {
 				{ "标题","房间数据更新" },
 				{ "数据", 房间数据.ToJson(格式美化: false) }
 			});
@@ -28,7 +29,7 @@ namespace TGZG.战雷革命游戏服务器 {
 			Print("收到服务器消息，但内容异常。错误码6678");
 		}
 		public async void 发送注册房间() {
-			var 消息 = await 游戏端.SendAsync(new() {
+			var 消息 = await base.SendAsync(new() {
 				{ "标题","注册" },
 				{ "数据", 房间数据.ToJson(格式美化: false) }
 			});
@@ -43,14 +44,14 @@ namespace TGZG.战雷革命游戏服务器 {
 			Print("收到服务器消息，但内容异常。错误码6677");
 		}
 		public async void 玩家数据更新(string 玩家昵称, 玩家计分数据 统计数据) {
-			await 游戏端.SendAsync(new() {
+			await base.SendAsync(new() {
 				{ "标题","玩家数据上传" },
 				{ "账号", 玩家昵称 },
 				{ "数据", 统计数据.ToJson(格式美化: false) }
 			});
 		}
 		public async Task<(bool 成功, string 内容)> 验证登录(string 账号, string 密码) {
-			var 消息 = await 游戏端.SendAsync(new() {
+			var 消息 = await base.SendAsync(new() {
 				{ "标题","验证登录" },
 				{ "账号", 账号 },
 				{ "密码", 密码 }

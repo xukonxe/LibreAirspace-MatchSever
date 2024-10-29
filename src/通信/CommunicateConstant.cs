@@ -8,10 +8,20 @@ namespace TGZG.战雷革命游戏服务器 {
 
 		public static class ProtocolType {
 			public const string TGZG键值对交换协议 = "TGZG键值对交换";
+			public const string TGZG键值对交换协议_TCP = "TGZG键值对交换_TCP";
 			public const string 自由空域对局协议 = "自由空域对局协议";
+			public const string 自由空域房间列表协议 = "自由空域房间列表协议";
 		}
 
 		public static class PacketType {
+			[ClientPacket([ProtocolType.TGZG键值对交换协议_TCP])]
+			[ServerPacket([ProtocolType.TGZG键值对交换协议_TCP])]
+			public const string _版本检测 = "_版本检测";
+
+			[ClientPacket([ProtocolType.TGZG键值对交换协议_TCP])]
+			[ServerPacket([ProtocolType.TGZG键值对交换协议_TCP])]
+			public const string 测试信息 = "测试信息";
+
 			[ClientPacket([ProtocolType.TGZG键值对交换协议])]
 			[ServerPacket([ProtocolType.TGZG键值对交换协议])]
 			public const string 数据错误 = "数据错误";

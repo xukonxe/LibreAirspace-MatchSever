@@ -1,16 +1,21 @@
-﻿using kcp2k;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using TGZG.Net;
+using TGZG.战雷革命游戏服务器;
+using TouchSocket.Sockets;
 using static CMKZ.LocalStorage;
 using static TGZG.Net.PacketHandlerRegistry;
 
-namespace TGZG.战雷革命游戏服务器 {
-	public class 数据包处理器注册表_Kcp : IRegistry<int, object> {
-
+namespace TGZG.Net {
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <remarks>
+	/// 注：此类中所谓的对"客户端 int 对象"的引用不过是个占位符罢了。
+	/// </remarks>
+	public class 数据包处理器注册表_Tcp客户端 : IRegistry<int, object> {
 		public HashSet<OperateResult> m_ThrowOnResultList;
 
 		public event Action OnPacketTypeRegistryUpdated = delegate { };
@@ -19,7 +24,7 @@ namespace TGZG.战雷革命游戏服务器 {
 
 		public HashSet<OperateResult> ThrowOnResultList => this.m_ThrowOnResultList;
 
-		public 数据包处理器注册表_Kcp() {
+		public 数据包处理器注册表_Tcp客户端() {
 			this.m_ThrowOnResultList = new HashSet<OperateResult>();
 		}
 
@@ -33,14 +38,14 @@ namespace TGZG.战雷革命游戏服务器 {
 
 		public OperateResult RegisterPacketType(string messageTitle, bool ignoreReserved = false, bool dontThrowExWhenThrowOnStatus = false) {
 			if (!ignoreReserved && CommunicateConstant.GetReservedPacketType().Contains(messageTitle)) {
-				return _RetStatCodeButThrowOnSpecVal(OperateResult.RESERVED);
+				return OperateResult.RESERVED;
 			}
 			if (this.m_Registry.ContainsKey(messageTitle)) {
-				return _RetStatCodeButThrowOnSpecVal(OperateResult.EXISTED);
+				return OperateResult.EXISTED;
 			}
 			this.m_Registry.Add(messageTitle, new List<(string callbackId, PacketHandlerDelegate<int, object> callbackFn)>());
 			this.OnPacketTypeRegistryUpdated();
-			return _RetStatCodeButThrowOnSpecVal(OperateResult.OK);
+			return OperateResult.OK;
 		}
 
 		public OperateResult UnregisterPacketType(string messageTitle, bool dontThrowExWhenThrowOnStatus = false) {
@@ -51,15 +56,15 @@ namespace TGZG.战雷革命游戏服务器 {
 				_ThePacketType = this.m_Registry.First(_Kvp => _Kvp.Key == messageTitle);
 			} catch (InvalidOperationException) {
 				//没有找到相关的数据包类型！
-				return _RetStatCodeButThrowOnSpecVal(OperateResult.NOT_FOUND);
+				return OperateResult.NOT_FOUND;
 			}
 			if (_ThePacketType.Value.Count > 0) {
 				//此数据包类型有注册处理程序，拒绝注销数据包类型！
-				return _RetStatCodeButThrowOnSpecVal(OperateResult.EXISTED);
+				return OperateResult.EXISTED;
 			}
 			this.m_Registry.Remove(messageTitle);
 			this.OnPacketTypeRegistryUpdated();
-			return _RetStatCodeButThrowOnSpecVal(OperateResult.OK);
+			return OperateResult.OK;
 		}
 
 		public OperateResult RegisterPacketHandler
@@ -70,16 +75,16 @@ namespace TGZG.战雷革命游戏服务器 {
 					// 寻找是否有同名的处理程序已经被注册？
 					_theRegistryItem.First(_CallbackRegistryItem => _CallbackRegistryItem.callbackId == handlerId);
 					// 如果有，则拒绝注册。
-					return _RetStatCodeButThrowOnSpecVal(OperateResult.EXISTED);
+					return OperateResult.EXISTED;
 				} catch (InvalidOperationException) {
 					// 嗯，没有同名的处理程序已经被注册。
 					_theRegistryItem.Add((handlerId, callback));
 					this.OnPacketTypeHandlerRegistryUpdated();
-					return _RetStatCodeButThrowOnSpecVal(OperateResult.OK);
+					return OperateResult.OK;
 				}
 			} else {
 				// 没有 messageTitle 所述的数据包类型被注册！
-				return _RetStatCodeButThrowOnSpecVal(OperateResult.NOT_FOUND);
+				return OperateResult.NOT_FOUND;
 			}
 		}
 
@@ -89,10 +94,10 @@ namespace TGZG.战雷革命游戏服务器 {
 			if (_theRegistryItem != null) {
 				_theRegistryItem.RemoveAll(_CallbackRegistryItem => _CallbackRegistryItem.callbackId == handlerId);
 				this.OnPacketTypeHandlerRegistryUpdated();
-				return _RetStatCodeButThrowOnSpecVal(OperateResult.OK);
+				return OperateResult.OK;
 			} else {
 				// 没有 messageTitle 所述的数据包类型被注册！
-				return _RetStatCodeButThrowOnSpecVal(OperateResult.NOT_FOUND);
+				return OperateResult.NOT_FOUND;
 			}
 		}
 

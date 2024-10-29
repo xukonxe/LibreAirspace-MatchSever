@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using TGZG.Net;
 using static CMKZ.LocalStorage;
 using PktTypTab = TGZG.战雷革命游戏服务器.CommunicateConstant.PacketType;
 

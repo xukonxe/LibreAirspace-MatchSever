@@ -1,16 +1,15 @@
-﻿using kcp2k;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using TGZG.Net;
+using TGZG.战雷革命游戏服务器;
+using TouchSocket.Sockets;
 using static CMKZ.LocalStorage;
 using static TGZG.Net.PacketHandlerRegistry;
 
-namespace TGZG.战雷革命游戏服务器 {
-	public class 数据包处理器注册表_Kcp : IRegistry<int, object> {
-
+namespace TGZG.Net {
+	public class 数据包处理器注册表_Tcp服务器 : IRegistry<SocketClient, object> {
 		public HashSet<OperateResult> m_ThrowOnResultList;
 
 		public event Action OnPacketTypeRegistryUpdated = delegate { };
@@ -19,7 +18,7 @@ namespace TGZG.战雷革命游戏服务器 {
 
 		public HashSet<OperateResult> ThrowOnResultList => this.m_ThrowOnResultList;
 
-		public 数据包处理器注册表_Kcp() {
+		public 数据包处理器注册表_Tcp服务器() {
 			this.m_ThrowOnResultList = new HashSet<OperateResult>();
 		}
 
@@ -29,82 +28,82 @@ namespace TGZG.战雷革命游戏服务器 {
 		/// <remarks>
 		/// 不应直接操作此字段，应该通过API间接操作。
 		/// </remarks>
-		protected Dictionary<string, List<(string callbackId, PacketHandlerDelegate<int, object> callbackFn)>> m_Registry = new();
+		protected Dictionary<string, List<(string callbackId, PacketHandlerDelegate<SocketClient, object> callbackFn)>> m_Registry = new();
 
 		public OperateResult RegisterPacketType(string messageTitle, bool ignoreReserved = false, bool dontThrowExWhenThrowOnStatus = false) {
 			if (!ignoreReserved && CommunicateConstant.GetReservedPacketType().Contains(messageTitle)) {
-				return _RetStatCodeButThrowOnSpecVal(OperateResult.RESERVED);
+				return OperateResult.RESERVED;
 			}
 			if (this.m_Registry.ContainsKey(messageTitle)) {
-				return _RetStatCodeButThrowOnSpecVal(OperateResult.EXISTED);
+				return OperateResult.EXISTED;
 			}
-			this.m_Registry.Add(messageTitle, new List<(string callbackId, PacketHandlerDelegate<int, object> callbackFn)>());
+			this.m_Registry.Add(messageTitle, new List<(string callbackId, PacketHandlerDelegate<SocketClient, object> callbackFn)>());
 			this.OnPacketTypeRegistryUpdated();
-			return _RetStatCodeButThrowOnSpecVal(OperateResult.OK);
+			return OperateResult.OK;
 		}
 
 		public OperateResult UnregisterPacketType(string messageTitle, bool dontThrowExWhenThrowOnStatus = false) {
-			KeyValuePair<string, List<ValueTuple<string, PacketHandlerDelegate<int, object>>>> _ThePacketType = default;
+			KeyValuePair<string, List<ValueTuple<string, PacketHandlerDelegate<SocketClient, object>>>> _ThePacketType = default;
 			try {
 				// 遍历字典中的每一个键值对寻找对应的注册表项！
 				// 因为KeyValuePair是值类型所以得这样做而不是调用Linq的FirstOrDefault！
 				_ThePacketType = this.m_Registry.First(_Kvp => _Kvp.Key == messageTitle);
 			} catch (InvalidOperationException) {
 				//没有找到相关的数据包类型！
-				return _RetStatCodeButThrowOnSpecVal(OperateResult.NOT_FOUND);
+				return OperateResult.NOT_FOUND;
 			}
 			if (_ThePacketType.Value.Count > 0) {
 				//此数据包类型有注册处理程序，拒绝注销数据包类型！
-				return _RetStatCodeButThrowOnSpecVal(OperateResult.EXISTED);
+				return OperateResult.EXISTED;
 			}
 			this.m_Registry.Remove(messageTitle);
 			this.OnPacketTypeRegistryUpdated();
-			return _RetStatCodeButThrowOnSpecVal(OperateResult.OK);
+			return OperateResult.OK;
 		}
 
 		public OperateResult RegisterPacketHandler
-				(string messageTitle, string handlerId, PacketHandlerDelegate<int, object> callback, bool dontThrowExWhenThrowOnStatus = false) {
+				(string messageTitle, string handlerId, PacketHandlerDelegate<SocketClient, object> callback, bool dontThrowExWhenThrowOnStatus = false) {
 			var _theRegistryItem = this.m_Registry[messageTitle];
 			if (_theRegistryItem != null) {
 				try {
 					// 寻找是否有同名的处理程序已经被注册？
 					_theRegistryItem.First(_CallbackRegistryItem => _CallbackRegistryItem.callbackId == handlerId);
 					// 如果有，则拒绝注册。
-					return _RetStatCodeButThrowOnSpecVal(OperateResult.EXISTED);
+					return OperateResult.EXISTED;
 				} catch (InvalidOperationException) {
 					// 嗯，没有同名的处理程序已经被注册。
 					_theRegistryItem.Add((handlerId, callback));
 					this.OnPacketTypeHandlerRegistryUpdated();
-					return _RetStatCodeButThrowOnSpecVal(OperateResult.OK);
+					return OperateResult.OK;
 				}
 			} else {
 				// 没有 messageTitle 所述的数据包类型被注册！
-				return _RetStatCodeButThrowOnSpecVal(OperateResult.NOT_FOUND);
+				return OperateResult.NOT_FOUND;
 			}
 		}
 
 		public OperateResult UnregisterPacketHandler
-				(string messageTitle, string handlerId, PacketHandlerDelegate<int, object> callback, bool dontThrowExWhenThrowOnStatus = false) {
+				(string messageTitle, string handlerId, PacketHandlerDelegate<SocketClient, object> callback, bool dontThrowExWhenThrowOnStatus = false) {
 			var _theRegistryItem = this.m_Registry[messageTitle];
 			if (_theRegistryItem != null) {
 				_theRegistryItem.RemoveAll(_CallbackRegistryItem => _CallbackRegistryItem.callbackId == handlerId);
 				this.OnPacketTypeHandlerRegistryUpdated();
-				return _RetStatCodeButThrowOnSpecVal(OperateResult.OK);
+				return OperateResult.OK;
 			} else {
 				// 没有 messageTitle 所述的数据包类型被注册！
-				return _RetStatCodeButThrowOnSpecVal(OperateResult.NOT_FOUND);
+				return OperateResult.NOT_FOUND;
 			}
 		}
 
 		public IReadOnlyCollection<string> GetAllRegisteredPacketType() => this.m_Registry.Keys;
 
-		public IReadOnlyCollection<(string handlerId, PacketHandlerDelegate<int, object> callback)>
+		public IReadOnlyCollection<(string handlerId, PacketHandlerDelegate<SocketClient, object> callback)>
 				GetPacketHandlers(string messageTitle) {
 			var _PacketTypeRegistryItem = this.m_Registry[messageTitle];
 			if (_PacketTypeRegistryItem is not null) {
 				return _PacketTypeRegistryItem;
 			}
-			return Array.Empty<(string handlerId, PacketHandlerDelegate<int, object> callback)>();
+			return Array.Empty<(string handlerId, PacketHandlerDelegate<SocketClient, object> callback)>();
 		}
 
 		protected OperateResult _RetStatCodeButThrowOnSpecVal(OperateResult returnValue) {
