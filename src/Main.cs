@@ -22,8 +22,8 @@ namespace TGZG.战雷革命游戏服务器 {
 		//
 		//============================
 
-		//public static 房间管理信道类 房间管理信道 = new("47.97.112.35:16312", "0.0.5");
-		public static 房间管理信道类 房间管理信道 = new("127.0.0.1:16312", "0.0.5");
+		public static 房间管理信道类 房间管理信道 = new("47.97.112.35:16312", "0.0.5");
+		//public static 房间管理信道类 房间管理信道 = new("127.0.0.1:16312", "0.0.5");
 		public static 玩家管理信道类 玩家管理信道 = new(16314, 版本);
 		public static WTRev.TKTLib.Modding.ModManager.ModManager 模组管理器 = null;
 
